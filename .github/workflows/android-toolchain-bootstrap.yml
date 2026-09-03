@@ -1,0 +1,26 @@
+name: Android Toolchain Bootstrap
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [android-toolchain-bootstrap]
+    paths:
+      - '.github/workflows/android-toolchain-bootstrap.yml'
+      - 'android-toolchain-trigger.txt'
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Create harmless probe
+        run: |
+          mkdir -p /tmp/tool-probe
+          printf 'public-runner-ok\n' > /tmp/tool-probe/status.txt
+          uname -a >> /tmp/tool-probe/status.txt
+      - name: Upload tiny probe artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-toolchain-probe
+          path: /tmp/tool-probe/status.txt
+          retention-days: 1
