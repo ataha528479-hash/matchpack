@@ -1,0 +1,27 @@
+name: Android Build Tools 34 Offline
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [android-toolchain-bootstrap]
+    paths:
+      - '.github/workflows/android-buildtools34.yml'
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: android-actions/setup-android@v3
+      - name: Install and package Build Tools 34.0.0
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager 'build-tools;34.0.0'
+          tar -C "$ANDROID_HOME/build-tools" -czf /tmp/android-build-tools-34.tar.gz 34.0.0
+          ls -lh /tmp/android-build-tools-34.tar.gz
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-build-tools-34
+          path: /tmp/android-build-tools-34.tar.gz
+          retention-days: 1
+          compression-level: 0
