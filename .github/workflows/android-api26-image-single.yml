@@ -1,0 +1,29 @@
+name: Android API 26 System Image Single
+on:
+  push:
+    branches: [android-toolchain-bootstrap]
+    paths: ['.github/workflows/android-api26-image-single.yml']
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: android-actions/setup-android@v3
+      - name: Install API 26 x86_64 system image
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager 'system-images;android-26;default;x86_64'
+      - name: Package image
+        run: |
+          set -euxo pipefail
+          cd "$ANDROID_HOME"
+          tar -czf /tmp/api26-system-image.tar.gz system-images/android-26/default/x86_64
+          ls -lh /tmp/api26-system-image.tar.gz
+          sha256sum /tmp/api26-system-image.tar.gz | tee /tmp/api26.sha256
+          mkdir -p /tmp/out
+          cp /tmp/api26-system-image.tar.gz /tmp/api26.sha256 /tmp/out/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-api26-system-image-single
+          path: /tmp/out
+          compression-level: 0
+          retention-days: 1
