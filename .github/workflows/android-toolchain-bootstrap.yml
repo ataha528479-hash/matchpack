@@ -9,18 +9,88 @@ on:
       - 'android-toolchain-trigger.txt'
 
 jobs:
-  probe:
+  buildkit:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 30
     steps:
-      - name: Create harmless probe
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Install Android API 35 build SDK
         run: |
-          mkdir -p /tmp/tool-probe
-          printf 'public-runner-ok\n' > /tmp/tool-probe/status.txt
-          uname -a >> /tmp/tool-probe/status.txt
-      - name: Upload tiny probe artifact
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager 'platforms;android-35' 'build-tools;35.0.0' 'platform-tools'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Warm Android Gradle Plugin 8.7.3 caches
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/dummy/app/src/main
+          cat >/tmp/dummy/settings.gradle <<'EOF'
+          pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }
+          dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS); repositories { google(); mavenCentral() } }
+          rootProject.name='offline-buildkit-probe'
+          include ':app'
+          EOF
+          cat >/tmp/dummy/build.gradle <<'EOF'
+          plugins { id 'com.android.application' version '8.7.3' apply false }
+          EOF
+          cat >/tmp/dummy/app/build.gradle <<'EOF'
+          plugins { id 'com.android.application' }
+          android {
+            namespace 'example.offline.probe'
+            compileSdk 35
+            defaultConfig { applicationId 'example.offline.probe'; minSdk 26; targetSdk 35; versionCode 1; versionName '1.0' }
+          }
+          EOF
+          cat >/tmp/dummy/app/src/main/AndroidManifest.xml <<'EOF'
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android"><application android:label="probe" /></manifest>
+          EOF
+          gradle -p /tmp/dummy assembleDebug --stacktrace
+
+      - name: Package offline buildkit
+        shell: bash
+        run: |
+          set -euo pipefail
+          KIT=/tmp/android-offline-buildkit
+          mkdir -p "$KIT/sdk/platforms" "$KIT/sdk/build-tools" "$KIT/gradle-user-home"
+          cp -a "$ANDROID_HOME/platforms/android-35" "$KIT/sdk/platforms/"
+          cp -a "$ANDROID_HOME/build-tools/35.0.0" "$KIT/sdk/build-tools/"
+          cp -a "$ANDROID_HOME/platform-tools" "$KIT/sdk/"
+          cp -a "$ANDROID_HOME/licenses" "$KIT/sdk/"
+
+          GRADLE_BIN="$(readlink -f "$(command -v gradle)")"
+          GRADLE_HOME_DIR="$(cd "$(dirname "$GRADLE_BIN")/.." && pwd)"
+          cp -a "$GRADLE_HOME_DIR" "$KIT/gradle"
+          cp -a "$HOME/.gradle/caches" "$KIT/gradle-user-home/"
+          if [ -d "$HOME/.gradle/native" ]; then cp -a "$HOME/.gradle/native" "$KIT/gradle-user-home/"; fi
+
+          cat >"$KIT/ENVIRONMENT.txt" <<EOF
+          ANDROID_SDK_ROOT=./sdk
+          GRADLE_USER_HOME=./gradle-user-home
+          JAVA_REQUIRED=17+
+          GRADLE_VERSION=8.9
+          ANDROID_GRADLE_PLUGIN=8.7.3
+          COMPILE_SDK=35
+          BUILD_TOOLS=35.0.0
+          EOF
+
+          tar -C /tmp -czf /tmp/android-offline-buildkit.tar.gz android-offline-buildkit
+          ls -lh /tmp/android-offline-buildkit.tar.gz
+          du -sh "$KIT" "$HOME/.gradle/caches" "$ANDROID_HOME/platforms/android-35" "$ANDROID_HOME/build-tools/35.0.0"
+
+      - name: Upload offline Android buildkit
         uses: actions/upload-artifact@v4
         with:
-          name: android-toolchain-probe
-          path: /tmp/tool-probe/status.txt
+          name: android-offline-buildkit
+          path: /tmp/android-offline-buildkit.tar.gz
           retention-days: 1
+          compression-level: 0
