@@ -1,0 +1,52 @@
+name: Market Hunter External Proof
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/market-hunter-external-proof.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  external-proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      BASE_URL: https://nexorasecure-workspace-web-production.up.railway.app
+    steps:
+      - name: Fetch public API and dashboard
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --retry 8 --retry-all-errors --retry-delay 5 --max-time 15 \
+            "$BASE_URL/api/public/market-hunter/v5" -o /tmp/v5.json
+          curl --fail --silent --show-error --location --retry 8 --retry-all-errors --retry-delay 5 --max-time 15 \
+            "$BASE_URL/market-hunter/ten-position" -o /tmp/v5.html
+          echo "api_bytes=$(wc -c < /tmp/v5.json)"
+          echo "html_bytes=$(wc -c < /tmp/v5.html)"
+
+      - name: Validate V5 public payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          jq -e '
+            .mode == "TRUE_LIVE_MIRROR_V5_7_DAY" and
+            .oldResultsPolicy == "ARCHIVED_NOT_COUNTED" and
+            (.daemon.successfulCycles | tonumber) >= 2 and
+            (.daemon.consecutiveFailures | tonumber) == 0 and
+            (.daemon.lastCycleDurationMs | tonumber) < 60000 and
+            .lanes.CRYPTO.status == "OK" and
+            .lanes.FOREX.status == "OK" and
+            (["OK", "MARKET_CLOSED"] | index(.lanes.STOCKS.status)) != null
+          ' /tmp/v5.json >/dev/null
+          grep -Fq 'Market Hunter — V5 True Live Mirror' /tmp/v5.html
+          ! grep -Eqi 'Workspace is locked|14/200|0/200|1/200' /tmp/v5.html
+
+      - name: Print live metrics
+        shell: bash
+        run: |
+          set -euo pipefail
+          jq -c '{mode,oldResultsPolicy,daemon,lanes:{CRYPTO:.lanes.CRYPTO,FOREX:.lanes.FOREX,STOCKS:.lanes.STOCKS}}' /tmp/v5.json
