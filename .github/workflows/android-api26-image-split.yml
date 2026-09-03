@@ -1,0 +1,51 @@
+name: Android API 26 System Image Split
+on:
+  push:
+    branches: [android-toolchain-bootstrap]
+    paths: ['.github/workflows/android-api26-image-split.yml']
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: android-actions/setup-android@v3
+      - name: Install API 26 x86_64 system image
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager 'platform-tools' 'emulator' 'system-images;android-26;default;x86_64'
+      - name: Package and split image
+        run: |
+          set -euxo pipefail
+          cd "$ANDROID_HOME"
+          tar -czf /tmp/api26-system-image.tar.gz system-images/android-26/default/x86_64
+          sha256sum /tmp/api26-system-image.tar.gz | tee /tmp/api26.sha256
+          split -b 240m -d -a 2 /tmp/api26-system-image.tar.gz /tmp/api26.part.
+          ls -lh /tmp/api26.part.*
+          mkdir -p /tmp/p00 /tmp/p01 /tmp/p02 /tmp/p03
+          cp /tmp/api26.part.00 /tmp/p00/part00
+          [ ! -f /tmp/api26.part.01 ] || cp /tmp/api26.part.01 /tmp/p01/part01
+          [ ! -f /tmp/api26.part.02 ] || cp /tmp/api26.part.02 /tmp/p02/part02
+          [ ! -f /tmp/api26.part.03 ] || cp /tmp/api26.part.03 /tmp/p03/part03
+          cp /tmp/api26.sha256 /tmp/p00/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: api26-part-00
+          path: /tmp/p00
+          retention-days: 1
+      - uses: actions/upload-artifact@v4
+        if: ${{ hashFiles('/tmp/p01/part01') != '' }}
+        with:
+          name: api26-part-01
+          path: /tmp/p01
+          retention-days: 1
+      - uses: actions/upload-artifact@v4
+        if: ${{ hashFiles('/tmp/p02/part02') != '' }}
+        with:
+          name: api26-part-02
+          path: /tmp/p02
+          retention-days: 1
+      - uses: actions/upload-artifact@v4
+        if: ${{ hashFiles('/tmp/p03/part03') != '' }}
+        with:
+          name: api26-part-03
+          path: /tmp/p03
+          retention-days: 1
