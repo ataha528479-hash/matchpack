@@ -1,0 +1,54 @@
+name: Android Emulator Offline Split
+
+on:
+  push:
+    branches: [android-toolchain-bootstrap]
+    paths:
+      - '.github/workflows/android-emulator-offline-split.yml'
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: android-actions/setup-android@v3
+      - name: Install emulator and Android 15 system image
+        run: |
+          yes | sdkmanager --licenses >/dev/null
+          sdkmanager "emulator" "system-images;android-35;default;x86_64"
+          mkdir -p /tmp/emulator-kit/sdk
+          cp -a "$ANDROID_HOME/emulator" /tmp/emulator-kit/sdk/
+          mkdir -p /tmp/emulator-kit/sdk/system-images/android-35/default
+          cp -a "$ANDROID_HOME/system-images/android-35/default/x86_64" /tmp/emulator-kit/sdk/system-images/android-35/default/
+          if [ -d "$ANDROID_HOME/cmdline-tools" ]; then cp -a "$ANDROID_HOME/cmdline-tools" /tmp/emulator-kit/sdk/; fi
+      - name: Archive and split emulator kit
+        run: |
+          tar -C /tmp/emulator-kit -czf /tmp/android-emulator-api35.tar.gz sdk
+          mkdir -p /tmp/emulator-parts
+          split -b 400M -d -a 2 /tmp/android-emulator-api35.tar.gz /tmp/emulator-parts/part-
+          ls -lh /tmp/emulator-parts
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-emulator-part-00
+          path: /tmp/emulator-parts/part-00
+          retention-days: 1
+          compression-level: 0
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-emulator-part-01
+          path: /tmp/emulator-parts/part-01
+          retention-days: 1
+          compression-level: 0
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-emulator-part-02
+          path: /tmp/emulator-parts/part-02
+          retention-days: 1
+          compression-level: 0
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-emulator-part-03
+          path: /tmp/emulator-parts/part-03
+          if-no-files-found: ignore
+          retention-days: 1
+          compression-level: 0
