@@ -1,0 +1,27 @@
+name: Android API 30 System Image
+
+on:
+  push:
+    branches: [android-toolchain-bootstrap]
+    paths:
+      - '.github/workflows/android-api30-image.yml'
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: android-actions/setup-android@v3
+      - name: Install API 30 x86_64 system image
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager "platform-tools" "system-images;android-30;default;x86_64"
+          mkdir -p /tmp/api30
+          cp -a "$ANDROID_HOME/system-images/android-30" /tmp/api30/
+      - name: Package image
+        run: tar -C /tmp/api30 -czf /tmp/android-api30-system-image.tar.gz android-30
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-api30-system-image
+          path: /tmp/android-api30-system-image.tar.gz
+          retention-days: 1
