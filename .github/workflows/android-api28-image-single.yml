@@ -1,0 +1,33 @@
+name: Android API 28 System Image Single
+on:
+  push:
+    branches: [android-toolchain-bootstrap]
+    paths: ['.github/workflows/android-api28-image-single.yml']
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: android-actions/setup-android@v3
+      - name: Install API 28 x86_64 system image
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager 'system-images;android-28;default;x86_64'
+          echo '--- image files ---'
+          find "$ANDROID_HOME/system-images/android-28/default/x86_64" -maxdepth 1 -type f -printf '%f %s\n' | sort
+          test -f "$ANDROID_HOME/system-images/android-28/default/x86_64/kernel-ranchu"
+          test -f "$ANDROID_HOME/system-images/android-28/default/x86_64/ramdisk.img"
+      - name: Package image
+        run: |
+          set -euxo pipefail
+          cd "$ANDROID_HOME"
+          tar -czf /tmp/api28-system-image.tar.gz system-images/android-28/default/x86_64
+          ls -lh /tmp/api28-system-image.tar.gz
+          sha256sum /tmp/api28-system-image.tar.gz | tee /tmp/api28.sha256
+          mkdir -p /tmp/out
+          cp /tmp/api28-system-image.tar.gz /tmp/api28.sha256 /tmp/out/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-api28-system-image-single
+          path: /tmp/out
+          compression-level: 0
+          retention-days: 1
