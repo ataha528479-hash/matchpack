@@ -1,0 +1,50 @@
+name: Android API 28 System Image Split
+on:
+  push:
+    branches: [android-toolchain-bootstrap]
+    paths: ['.github/workflows/android-api28-image-split.yml']
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: android-actions/setup-android@v3
+      - name: Install and verify API 28 image
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager 'system-images;android-28;default;x86_64'
+          test -f "$ANDROID_HOME/system-images/android-28/default/x86_64/kernel-ranchu"
+          test -f "$ANDROID_HOME/system-images/android-28/default/x86_64/ramdisk.img"
+      - name: Package and split exactly three parts
+        run: |
+          set -euxo pipefail
+          cd "$ANDROID_HOME"
+          tar -czf /tmp/api28.tar.gz system-images/android-28/default/x86_64
+          sha256sum /tmp/api28.tar.gz > /tmp/api28.sha256
+          split -b 200m -d -a 2 /tmp/api28.tar.gz /tmp/part
+          ls -lh /tmp/part*
+          test -f /tmp/part00
+          test -f /tmp/part01
+          test -f /tmp/part02
+          test ! -f /tmp/part03
+          mkdir -p /tmp/a0 /tmp/a1 /tmp/a2
+          cp /tmp/part00 /tmp/api28.sha256 /tmp/a0/
+          cp /tmp/part01 /tmp/a1/
+          cp /tmp/part02 /tmp/a2/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: api28-part-00
+          path: /tmp/a0
+          compression-level: 0
+          retention-days: 1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: api28-part-01
+          path: /tmp/a1
+          compression-level: 0
+          retention-days: 1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: api28-part-02
+          path: /tmp/a2
+          compression-level: 0
+          retention-days: 1
