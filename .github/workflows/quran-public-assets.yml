@@ -1,0 +1,75 @@
+name: Quran Public Content Assets
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [android-toolchain-bootstrap]
+    paths:
+      - '.github/workflows/quran-public-assets.yml'
+      - 'quran-public-assets-trigger.txt'
+
+jobs:
+  assets:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Download pinned public sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/quran-public-assets
+          QURAN_COMMIT='281dbbe8eed1370daa5a023b6cd81655cbfd6473'
+          ADHKAR_COMMIT='29d7623fede52eca835a789025dfda866e8cfe44'
+          curl -fL --retry 4 -o /tmp/quran-public-assets/quran.csv \
+            "https://raw.githubusercontent.com/thetruetruth/quran-data-kfgqpc/${QURAN_COMMIT}/hafs-smart/data/hafs_smart_v8.csv"
+          curl -fL --retry 4 -o /tmp/quran-public-assets/hafssmart.8.ttf \
+            "https://raw.githubusercontent.com/thetruetruth/quran-data-kfgqpc/${QURAN_COMMIT}/hafs-smart/font/hafssmart.8.ttf"
+          curl -fL --retry 4 -o /tmp/adhkar-upstream.json \
+            "https://raw.githubusercontent.com/Seen-Arabic/Morning-And-Evening-Adhkar-DB/${ADHKAR_COMMIT}/ar.json"
+
+      - name: Vet and package morning/evening adhkar
+        run: |
+          python3 - <<'PY'
+          import csv, json
+          src='/tmp/adhkar-upstream.json'
+          dst='/tmp/quran-public-assets/adhkar_ar.json'
+          with open(src, encoding='utf-8') as f:
+              data=json.load(f)
+          assert isinstance(data,list) and len(data)==34
+          output=[]
+          excluded=[]
+          for x in data:
+              order=int(x.get('order',0))
+              content=str(x.get('content','')).strip()
+              source=str(x.get('source','')).strip()
+              count=int(x.get('count',0) or 0)
+              typ=int(x.get('type',-1))
+              if order in {1,2,3}:
+                  excluded.append(order)
+                  continue
+              assert content and source and count>0 and typ in {0,1,2}
+              y=dict(x)
+              y['audio']=''
+              output.append(y)
+          assert sorted(excluded)==[1,2,3]
+          assert len(output)==31
+          with open(dst,'w',encoding='utf-8') as f:
+              json.dump(output,f,ensure_ascii=False,indent=2)
+          with open('/tmp/quran-public-assets/quran.csv',encoding='utf-8-sig',newline='') as f:
+              rows=list(csv.DictReader(f))
+          assert len(rows)==6236
+          assert len({int(r['sura_no']) for r in rows})==114
+          pages={int(r['page']) for r in rows}
+          assert min(pages)==1 and max(pages)==604
+          assert any(int(r['sura_no'])==2 and int(r['aya_no'])==255 for r in rows)
+          assert all(r['aya_text'].strip() for r in rows)
+          print('PUBLIC ASSET PASS: Quran=6236, surahs=114, pages=1-604, adhkar=31')
+          PY
+          sha256sum /tmp/quran-public-assets/* | sort | tee /tmp/quran-public-assets/SHA256SUMS.txt
+
+      - name: Upload public content assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: quran-public-content-assets
+          path: /tmp/quran-public-assets/
+          retention-days: 1
