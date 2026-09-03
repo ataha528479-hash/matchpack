@@ -1,0 +1,43 @@
+name: Android API 30 System Image Split
+
+on:
+  push:
+    branches: [android-toolchain-bootstrap]
+    paths:
+      - '.github/workflows/android-api30-image-split.yml'
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: android-actions/setup-android@v3
+      - name: Install API 30 image
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager "system-images;android-30;default;x86_64"
+          tar -C "$ANDROID_HOME/system-images" -czf /tmp/android-api30-system-image.tar.gz android-30
+          split -b 280M -d -a 2 /tmp/android-api30-system-image.tar.gz /tmp/api30-part-
+          ls -lh /tmp/api30-part-*
+      - uses: actions/upload-artifact@v4
+        with:
+          name: api30-part-00
+          path: /tmp/api30-part-00
+          retention-days: 1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: api30-part-01
+          path: /tmp/api30-part-01
+          retention-days: 1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: api30-part-02
+          path: /tmp/api30-part-02
+          if-no-files-found: ignore
+          retention-days: 1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: api30-part-03
+          path: /tmp/api30-part-03
+          if-no-files-found: ignore
+          retention-days: 1
