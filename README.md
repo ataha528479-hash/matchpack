@@ -1,5 +1,7 @@
 # matchpack
 
+[![RustChain contributor](https://img.shields.io/badge/RustChain-contributor-orange)](https://rustchain.org)
+
 The goal of this module is to find the best schematic layout for a set of `SchematicChip`s and `SchematicGroups` containing
 `SchematicPins` connected to each other with `SchematicTraces`
 
