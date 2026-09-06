@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800" role="img" aria-labelledby="title desc">
+  <title id="title">RustChain Proof of Antiquity — 60-second explainer</title>
+  <desc id="desc">An original flowchart explaining one CPU one vote, hardware fingerprinting, antiquity weighting, VM penalties, and how to start with clawrtc.</desc>
+  <rect width="1200" height="800" fill="#111827"/>
+  <text x="600" y="70" text-anchor="middle" font-family="Arial, sans-serif" font-size="38" font-weight="700" fill="#f9fafb">RustChain: Proof of Antiquity in 60 Seconds</text>
+  <text x="600" y="108" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" fill="#d1d5db">Real machines earn by proving what they are — and older hardware gets a higher weight.</text>
+
+  <rect x="65" y="160" rx="18" width="310" height="190" fill="#1f2937" stroke="#60a5fa" stroke-width="3"/>
+  <text x="220" y="205" text-anchor="middle" font-family="Arial" font-size="27" font-weight="700" fill="#93c5fd">1 CPU = 1 Vote</text>
+  <text x="95" y="245" font-family="Arial" font-size="19" fill="#f3f4f6">A participating CPU is one voting unit.</text>
+  <text x="95" y="278" font-family="Arial" font-size="19" fill="#f3f4f6">Reward weight is adjusted by verified</text>
+  <text x="95" y="309" font-family="Arial" font-size="19" fill="#f3f4f6">hardware antiquity — not raw speed alone.</text>
+
+  <rect x="445" y="145" rx="18" width="310" height="220" fill="#1f2937" stroke="#34d399" stroke-width="3"/>
+  <text x="600" y="185" text-anchor="middle" font-family="Arial" font-size="27" font-weight="700" fill="#6ee7b7">6 Hardware Checks</text>
+  <text x="475" y="224" font-family="Arial" font-size="17" fill="#f3f4f6">1. Clock / oscillator drift</text>
+  <text x="475" y="253" font-family="Arial" font-size="17" fill="#f3f4f6">2. Cache timing fingerprint</text>
+  <text x="475" y="282" font-family="Arial" font-size="17" fill="#f3f4f6">3. SIMD unit identity</text>
+  <text x="475" y="311" font-family="Arial" font-size="17" fill="#f3f4f6">4. Thermal drift entropy</text>
+  <text x="475" y="340" font-family="Arial" font-size="17" fill="#f3f4f6">5. Instruction-path jitter  •  6. Anti-emulation</text>
+
+  <rect x="825" y="160" rx="18" width="310" height="190" fill="#1f2937" stroke="#f59e0b" stroke-width="3"/>
+  <text x="980" y="205" text-anchor="middle" font-family="Arial" font-size="27" font-weight="700" fill="#fbbf24">Age Changes the Weight</text>
+  <text x="855" y="247" font-family="Arial" font-size="19" fill="#f3f4f6">Example from the project docs:</text>
+  <text x="855" y="281" font-family="Arial" font-size="19" fill="#f3f4f6">PowerPC G4 (2003): 2.5×</text>
+  <text x="855" y="313" font-family="Arial" font-size="19" fill="#f3f4f6">Modern x86_64: 0.8×</text>
+
+  <path d="M375 255 L445 255" stroke="#9ca3af" stroke-width="5" marker-end="url(#arrow)"/>
+  <path d="M755 255 L825 255" stroke="#9ca3af" stroke-width="5" marker-end="url(#arrow)"/>
+  <defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#9ca3af"/></marker></defs>
+
+  <rect x="110" y="435" rx="18" width="440" height="185" fill="#1f2937" stroke="#f87171" stroke-width="3"/>
+  <text x="330" y="480" text-anchor="middle" font-family="Arial" font-size="27" font-weight="700" fill="#fca5a5">VM / Emulator?</text>
+  <text x="145" y="522" font-family="Arial" font-size="19" fill="#f3f4f6">Synthetic environments do not get to claim the</text>
+  <text x="145" y="554" font-family="Arial" font-size="19" fill="#f3f4f6">age of the hardware they imitate. Anti-emulation</text>
+  <text x="145" y="586" font-family="Arial" font-size="19" fill="#f3f4f6">and physical timing signals expose the mismatch.</text>
+
+  <rect x="650" y="435" rx="18" width="440" height="185" fill="#1f2937" stroke="#a78bfa" stroke-width="3"/>
+  <text x="870" y="480" text-anchor="middle" font-family="Arial" font-size="27" font-weight="700" fill="#c4b5fd">Real Vintage Hardware?</text>
+  <text x="685" y="522" font-family="Arial" font-size="19" fill="#f3f4f6">If the fingerprint is consistent with a genuine</text>
+  <text x="685" y="554" font-family="Arial" font-size="19" fill="#f3f4f6">physical machine, its verified antiquity multiplier</text>
+  <text x="685" y="586" font-family="Arial" font-size="19" fill="#f3f4f6">can increase the reward weight.</text>
+
+  <text x="600" y="687" text-anchor="middle" font-family="Arial" font-size="24" font-weight="700" fill="#f9fafb">Start here:  pip install clawrtc</text>
+  <text x="600" y="724" text-anchor="middle" font-family="Arial" font-size="18" fill="#d1d5db">Sources checked against Scottcjn/Rustchain README on 2026-09-06.</text>
+  <text x="600" y="758" text-anchor="middle" font-family="Arial" font-size="16" fill="#9ca3af">Original explainer prepared by @ataha528479-hash for rustchain-bounties #13954.</text>
+</svg>
